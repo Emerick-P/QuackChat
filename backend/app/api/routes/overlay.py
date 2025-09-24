@@ -1,6 +1,5 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
 from app.services.overlay import rooms  # notre singleton Rooms()
-from app.services.overlay import send_chat
 
 
 router = APIRouter(prefix="/overlay", tags=["overlay"])
