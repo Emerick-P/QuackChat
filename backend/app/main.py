@@ -1,5 +1,7 @@
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from app.api.routes import overlay
 
 app = FastAPI(title="QuackChat - Backend (Step 1)")
 
@@ -14,3 +16,10 @@ app.add_middleware(
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+# Routes
+app.include_router(overlay.router)
+
+if os.getenv("ENV", "dev") != "prod":
+    from app.api.routes import dev
+    app.include_router(dev.router) 
