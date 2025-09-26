@@ -1,11 +1,9 @@
-from typing import Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, Request
-from app.core.state import PALETTE, DUCKS
+from app.core.state import DUCKS
 from app.core.auth import auth_context
 from app.schemas.duck import DuckOut, DuckPatch
 from app.services.ducks import EDITABLE_FIELDS, apply_duck_patch
-from app.services.overlay import send_event, make_duck_update_event
-from app.utils.patch import apply_patch, extract_patch
+from app.utils.patch import extract_patch
 
 router = APIRouter(prefix="/me", tags=["me"], dependencies=[Depends(auth_context)]) # Protege tout le router
 

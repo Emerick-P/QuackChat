@@ -1,4 +1,4 @@
-from typing import Any, Dict, Mapping, Set, Callable, Tuple
+from typing import Any, Dict, Mapping, Set, Callable
 from fastapi import HTTPException
 from app.core.state import DUCKS, PALETTE
 from app.utils.patch import apply_patch

@@ -1,4 +1,4 @@
-from typing import Iterable, Mapping, MutableMapping, Tuple, Set, Dict, Any
+from typing import Iterable, Mapping, MutableMapping, Set, Dict, Any
 from pydantic import BaseModel
 
 def extract_patch(body: BaseModel, *, allowed: Iterable[str]) -> Dict[str, Any]:
