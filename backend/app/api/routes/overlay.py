@@ -9,8 +9,12 @@ router = APIRouter(prefix="/overlay", tags=["overlay"])
 async def ws_overlay(ws: WebSocket, 
                      channel: str = Query("default")):
     """
-    Overlay OBS (ou page web) se connecte ici :
-      ws://localhost:8000/ws/overlay?channel=default
+    Gère la connexion WebSocket pour l'overlay OBS ou la page web.
+    Ajoute le client au canal, maintient la connexion et nettoie à la déconnexion.
+
+    Args:
+        ws (WebSocket): Connexion WebSocket du client.
+        channel (str): Nom du canal d'overlay.
     """
     await rooms.add(ws, channel)
     try: 
@@ -18,5 +22,3 @@ async def ws_overlay(ws: WebSocket,
             await ws.receive_text() # on ne fait rien avec, juste garder la connexion
     except WebSocketDisconnect:
         await rooms.remove(ws, channel) # nettoyage à la déconnexion
-
-
