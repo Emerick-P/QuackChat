@@ -1,7 +1,13 @@
+from collections.abc import Mapping
+from typing import Union
 import json
 from typing import Dict, Any, Set, DefaultDict
 from collections import defaultdict
 from fastapi import WebSocket
+from pydantic import BaseModel
+
+from app.schemas.duck import DuckOut
+from app.schemas.events import ChatEvent, DuckUpdateEvent, WSEvent
 
 
 class Rooms:
@@ -50,20 +56,29 @@ class Rooms:
 # singleton simple
 rooms = Rooms()
 
-async def send_event(channel: str, event: dict):
+EventLike = Union[WSEvent, Mapping[str, Any]]
+
+def _as_payload(event: EventLike) -> Dict:
+    if isinstance(event, BaseModel):
+        return event.model_dump()
+    elif isinstance(event, Mapping):
+        return dict(event)
+    raise TypeError(f"Unsupported event type: {type(event)!r}")
+
+async def send_event(channel: str, event: EventLike):
     """
     Diffuse un événement arbitraire sur le canal overlay.
 
     Args:
         channel (str): Nom du canal overlay.
-        event (dict): Événement à diffuser (formaté pour l'overlay).
+        event (EventLike): Événement à diffuser (formaté pour l'overlay).
     """
-    await rooms.broadcast(channel, event)
+    await rooms.broadcast(channel, _as_payload(event))
 
 def make_chat_event(display: str, 
                     message: str, 
                     user_id: str|int, 
-                    color: str = "#8A2BE2") -> Dict:
+                    color: str = "#8A2BE2") -> ChatEvent:
     """
     Crée un événement de chat à diffuser sur l'overlay.
 
@@ -74,17 +89,17 @@ def make_chat_event(display: str,
         color (str): Couleur du canard.
 
     Returns:
-        Dict: Événement formaté pour l'overlay.
+        ChatEvent: Événement formaté pour l'overlay.
     """
-    return {
-        "type": "chat",
-        "user_id": user_id,
-        "display": display,
-        "message": message,
-        "duck": {"color": color},
-    }
+    return ChatEvent(
+        type = "chat",
+        user_id = user_id,
+        display = display,
+        message = message,
+        duck = DuckOut(color=color)
+    )
 
-def make_duck_update_event(user_id: str | int, color: str) -> dict:
+def make_duck_update_event(user_id: str | int, color: str) -> DuckUpdateEvent:
     """
     Crée un événement de mise à jour de canard pour l'overlay.
 
@@ -93,6 +108,11 @@ def make_duck_update_event(user_id: str | int, color: str) -> dict:
         color (str): Nouvelle couleur du canard.
 
     Returns:
-        dict: Événement formaté pour l'overlay.
+        DuckUpdateEvent: Événement formaté pour l'overlay.
     """
-    return {"type": "duck_update", "user_id": user_id, "duck": {"color": color}}
+    return DuckUpdateEvent(
+        type = "duck_update", 
+        user_id = user_id, 
+        duck = DuckOut(color=color)
+    )
+
