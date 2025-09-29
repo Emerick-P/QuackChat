@@ -32,3 +32,6 @@ env/*.env
 # --- OS junk
 .DS_Store
 Thumbs.db
+
+# Base de données
+var/*.db

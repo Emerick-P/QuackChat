@@ -10,5 +10,7 @@ class Settings:
         self.ENV: str = os.getenv("ENV", "dev").lower()
         # Liste des origines CORS autorisées (CSV), ; default = front dev
         self.CORS_ORIGINS: List[str] = _parse_csv(os.getenv("CORS_ORIGINS")) or ["http://localhost:5173"] 
+        # SQLite fallback for dev if not defined
+        self.DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./var/dev.db")
 
 settings = Settings()
