@@ -9,7 +9,7 @@ from alembic import context
 
 from app.core.settings import settings
 from app.db.base import Base
-from app.models import user # noqa: F401 # import models for Alembic
+from app.models import user, pairing_code # noqa: F401 # import models for Alembic
 
 
 # this is the Alembic Config object, which provides
