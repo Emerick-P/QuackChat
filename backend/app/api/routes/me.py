@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from app.core.state import DUCKS
 from app.core.auth import auth_context
+from app.db.session import get_session
 from app.schemas.duck import DuckOut, DuckPatch
 from app.services.ducks import EDITABLE_FIELDS, apply_duck_patch
 from app.utils.patch import extract_patch
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/me", tags=["me"], dependencies=[Depends(auth_context)]) # Protege tout le router
 
@@ -22,7 +24,7 @@ async def me_duck(request: Request):
     return {"user_id": uid, "duck": DUCKS.get(uid, {"color": "#8A2BE2"})}
 
 @router.patch("/duck")
-async def patch_duck(request: Request, body: DuckPatch, channel: str = "default"):
+async def patch_duck(request: Request, body: DuckPatch, channel: str = "default", session: AsyncSession = Depends(get_session)):
     """
     Met à jour partiellement le canard de l'utilisateur authentifié.
     Les champs modifiables sont définis dans EDITABLE_FIELDS (importé depuis app.services.ducks).
@@ -43,7 +45,7 @@ async def patch_duck(request: Request, body: DuckPatch, channel: str = "default"
         dict: Confirmation et état final du canard (serialisé via DuckOut).
     """
     uid = request.state.uid
-    current = DUCKS.get(uid, {"color": "#8A2BE2"})
+    current = DUCKS.get(uid, {"duck_color": "#8A2BE2"})
 
     # 1) récupérer uniquement les champs envoyés et autorisés
     try:
@@ -53,5 +55,5 @@ async def patch_duck(request: Request, body: DuckPatch, channel: str = "default"
     if not patch:
         return {"ok": True, "duck": current}
     
-    updated = await apply_duck_patch(uid, patch, channel=channel)
-    return {"ok": True, "duck": DuckOut(**updated).model_dump()} # Le **updated décompose le dictionnaire en arguments nommés pour le modèle Pydantic
+    updated = await apply_duck_patch(session, uid, patch, channel=channel)
+    return {"ok": True, "duck": DuckOut(**updated[0]).model_dump()} # Le **updated décompose le dictionnaire en arguments nommés pour le modèle Pydantic

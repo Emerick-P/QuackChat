@@ -1,9 +1,10 @@
-from typing import Optional
+from typing import Any, Optional
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.user import User
 
 DEFAULT_COLOR = "#8A2BE2"
+ALLOWED_PATCH = {"display", "duck_color"}
 
 async def get_user(session: AsyncSession, user_id: str) -> Optional[User]:
     res = await session.execute(
@@ -30,10 +31,21 @@ async def ensure_user_for_login(session: AsyncSession, user_id: str, display: st
     await session.commit()
     return user
 
-async def set_duck_color(session: AsyncSession, user_id: str, color: str) -> None:
-    await session.execute(
-        update(User)
-        .where(User.id == user_id)
-        .values(duck_color=color)
-    )
+# async def set_duck_color(session: AsyncSession, user_id: str, color: str) -> None:
+#     await session.execute(
+#         update(User)
+#         .where(User.id == user_id)
+#         .values(duck_color=color)
+#     )
+#     await session.commit()
+
+async def patch_user(session: AsyncSession, user_id: str, changes: dict[str, Any]) -> User:
+    """Patch whitelisté (display, duck_color). Renvoie l'objet à jour."""
+    user = await get_user(session, user_id)
+    if user is None:
+        raise ValueError("User not found")
+    for k, v in changes.items():
+        if k in ALLOWED_PATCH:
+            setattr(user, k, v)
     await session.commit()
+    return user

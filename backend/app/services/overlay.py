@@ -78,7 +78,7 @@ async def send_event(channel: str, event: EventLike):
 def make_chat_event(display: str, 
                     message: str, 
                     user_id: str|int, 
-                    color: str = "#8A2BE2") -> ChatEvent:
+                    duck_color: str = "#8A2BE2") -> ChatEvent:
     """
     Crée un événement de chat à diffuser sur l'overlay.
 
@@ -86,7 +86,7 @@ def make_chat_event(display: str,
         display (str): Nom d'affichage de l'utilisateur.
         message (str): Message à afficher.
         user_id (str|int): Identifiant utilisateur.
-        color (str): Couleur du canard.
+        duck_color (str): Couleur du canard.
 
     Returns:
         ChatEvent: Événement formaté pour l'overlay.
@@ -96,16 +96,16 @@ def make_chat_event(display: str,
         user_id = user_id,
         display = display,
         message = message,
-        duck = DuckOut(color=color)
+        duck = DuckOut(duck_color=duck_color)
     )
 
-def make_duck_update_event(user_id: str | int, color: str) -> DuckUpdateEvent:
+def make_duck_update_event(user_id: str | int, duck_color: str) -> DuckUpdateEvent:
     """
     Crée un événement de mise à jour de canard pour l'overlay.
 
     Args:
         user_id (str|int): Identifiant utilisateur.
-        color (str): Nouvelle couleur du canard.
+        duck_color (str): Nouvelle couleur du canard.
 
     Returns:
         DuckUpdateEvent: Événement formaté pour l'overlay.
@@ -113,6 +113,6 @@ def make_duck_update_event(user_id: str | int, color: str) -> DuckUpdateEvent:
     return DuckUpdateEvent(
         type = "duck_update", 
         user_id = user_id, 
-        duck = DuckOut(color=color)
+        duck = DuckOut(duck_color=duck_color)
     )
 

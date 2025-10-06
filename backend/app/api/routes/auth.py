@@ -26,7 +26,7 @@ async def dev_login(display: str, user_id: Optional[str] = None, session: AsyncS
     user = await ensure_user_for_login(session, uid, display)
 
     USERS[uid] = {"display": display}
-    DUCKS.setdefault(uid, {"color": user.duck_color})
+    DUCKS.setdefault(uid, {"duck_color": user.duck_color})
 
     tok = secrets.token_urlsafe(24)
     TOKENS[tok] = uid
