@@ -11,5 +11,11 @@ engine: AsyncEngine = create_async_engine(settings.DATABASE_URL, echo=False, fut
 SessionLocal = async_sessionmaker(bind=engine, expire_on_commit=False, class_=AsyncSession)
 
 async def get_session() -> AsyncIterator[AsyncSession]:
+    """
+    Dependency provider for an async database session.
+
+    Yields:
+        AsyncSession: An active database session.
+    """
     async with SessionLocal() as session:
         yield session

@@ -7,10 +7,25 @@ DEFAULT_COLOR = "#8A2BE2"
 ALLOWED_PATCH = {"display", "duck_color"}
 
 class UsersRepository:
+    """
+    Repository for user-related database operations.
+
+    Args:
+        session (AsyncSession): The database session to use.
+    """
     def __init__(self, session: AsyncSession):
         self.session = session
 
     async def get(self, user_id: str) -> Optional[User]:
+        """
+        Retrieves a user by their ID.
+
+        Args:
+            user_id (str): The user's unique identifier.
+
+        Returns:
+            Optional[User]: The user object if found, else None.
+        """
         res = await self.session.execute(
             select(User)
             .where(User.id == user_id)

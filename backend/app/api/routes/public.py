@@ -6,9 +6,9 @@ router = APIRouter(tags=["public"])
 @router.get("/palette")
 async def get_palette():
     """
-    Retourne la palette de couleurs disponible pour les utilisateurs.
+    Returns the available color palette for users.
 
     Returns:
-        dict: Dictionnaire contenant les couleurs publiques et verrouillées.
+        dict: Dictionary containing public and locked colors.
     """
     return PALETTE

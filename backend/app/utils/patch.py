@@ -3,17 +3,20 @@ from pydantic import BaseModel
 
 def extract_patch(body: BaseModel, *, allowed: Iterable[str]) -> Dict[str, Any]:
     """
-    Extrait les champs modifiés d'un modèle Pydantic par rapport à son état initial.
-    Ne conserve que les champs autorisés et dont la valeur diffère de l'original.
+    Extracts the modified fields from a Pydantic model compared to its initial state.
+    Keeps only allowed fields whose value differs from the original.
 
     Args:
-        body: Instance d'un modèle Pydantic.
-        allowed (Iterable[str]): Champs autorisés à être extraits.
+        body (BaseModel): Instance of a Pydantic model.
+        allowed (Iterable[str]): Fields allowed to be extracted.
 
     Returns:
-        Dict[str, Any]: Dictionnaire contenant uniquement les champs modifiés et autorisés.
+        Dict[str, Any]: Dictionary containing only the modified and allowed fields.
+
+    Raises:
+        ValueError: If forbidden fields are present in the input.
     """
-    raw = body.model_dump(exclude_unset=True) # ne garde que les champs fournis
+    raw = body.model_dump(exclude_unset=True)  # keeps only provided fields
     allowed_set = set(allowed)
     extra = set(raw) - allowed_set
     if extra:
@@ -22,15 +25,15 @@ def extract_patch(body: BaseModel, *, allowed: Iterable[str]) -> Dict[str, Any]:
 
 def apply_patch(current: MutableMapping[str, Any], patch: Mapping[str, Any]) -> Set[str]:
     """
-    Applique un patch (dictionnaire de modifications) à un dictionnaire existant.
-    Met à jour uniquement les champs présents dans le patch et retourne les champs modifiés.
+    Applies a patch (dictionary of changes) to an existing dictionary.
+    Updates only the fields present in the patch and returns the modified keys.
 
     Args:
-        current (MutableMapping[str, Any]): Dictionnaire à mettre à jour.
-        patch (Mapping[str, Any]): Dictionnaire contenant les modifications.
+        current (MutableMapping[str, Any]): Dictionary to update.
+        patch (Mapping[str, Any]): Dictionary containing the changes.
 
     Returns:
-        Set[str]: Ensemble des clés qui ont été modifiées.
+        Set[str]: Set of keys that were modified.
     """
     changed: Set[str] = set()
     for k, v in patch.items():

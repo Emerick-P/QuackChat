@@ -9,16 +9,16 @@ async def testpush(display: str = "Viewer",
                    user_id: str = "twitch:test",
                    channel: str = "default"):
     """
-    Simule l'envoi d'un message chat pour tester l'overlay.
+    Simulates sending a chat message to test the overlay.
 
     Args:
-        display (str): Nom d'affichage du testeur.
-        message (str): Message à afficher.
-        user_id (str): Identifiant utilisateur fictif.
-        channel (str): Canal de test.
+        display (str): Display name of the tester.
+        message (str): Message to display.
+        user_id (str): Fake user identifier.
+        channel (str): Test channel.
 
     Returns:
-        dict: Indique si le message a été envoyé.
+        dict: Indicates whether the message was sent.
     """
     await send_event(channel, make_chat_event(display, message, user_id))
     return {"sent": True}

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
-from app.services.overlay import rooms  # notre singleton Rooms()
+from app.services.overlay import rooms  # our singleton Rooms()
 
 
 router = APIRouter(prefix="/overlay", tags=["overlay"])
@@ -9,16 +9,16 @@ router = APIRouter(prefix="/overlay", tags=["overlay"])
 async def ws_overlay(ws: WebSocket, 
                      channel: str = Query("default")):
     """
-    Gère la connexion WebSocket pour l'overlay OBS ou la page web.
-    Ajoute le client au canal, maintient la connexion et nettoie à la déconnexion.
+    Manages the WebSocket connection for the OBS overlay or web page.
+    Adds the client to the channel, keeps the connection alive, and cleans up on disconnect.
 
     Args:
-        ws (WebSocket): Connexion WebSocket du client.
-        channel (str): Nom du canal d'overlay.
+        ws (WebSocket): Client WebSocket connection.
+        channel (str): Overlay channel name.
     """
     await rooms.add(ws, channel)
     try: 
         while True:
-            await ws.receive_text() # on ne fait rien avec, juste garder la connexion
+            await ws.receive_text()  # Keep the connection alive; incoming messages are ignored
     except WebSocketDisconnect:
-        await rooms.remove(ws, channel) # nettoyage à la déconnexion
+        await rooms.remove(ws, channel)  # Clean up on disconnect

@@ -10,52 +10,63 @@ router = APIRouter(prefix="/me", tags=["me"], dependencies=[Depends(auth_context
 @router.get("/duck")
 async def me_duck(request: Request, uow: UnitOfWork = Depends(get_uow)):
     """
-    Retourne les informations du canard associé à l'utilisateur authentifié.
+    Returns information about the duck associated with the authenticated user.
 
     Args:
-        request (Request): Objet FastAPI contenant le contexte de la requête.
+        request (Request): FastAPI request object containing the request context.
+        uow (UnitOfWork): Unit of Work instance for database operations.
 
     Returns:
-        dict: Informations sur l'utilisateur et son canard.
-    """
-    uid = request.state.uid
-    user = await uow.users.get(uid)
-    color = user.duck_color if user else "#8A2BE2"
-    return {"user_id": uid, "duck": DuckOut(duck_color=color).model_dump()}
+        dict: Information about the user and their duck.
 
-@router.patch("/duck")
-async def patch_duck(request: Request, body: DuckPatch, channel: str = "default", uow: UnitOfWork = Depends(get_uow)):
-    """
-    Met à jour partiellement le canard de l'utilisateur authentifié.
-    Les champs modifiables sont définis dans EDITABLE_FIELDS (importé depuis app.services.ducks).
-    Valide les champs, applique le patch via apply_duck_patch et notifie l'overlay si nécessaire.
-
-    Étapes :
-    1. Récupère uniquement les champs envoyés et autorisés via extract_patch (EDITABLE_FIELDS).
-    2. Valide la couleur si elle est présente dans le patch (palette autorisée).
-    3. Applique le patch sur le canard avec apply_duck_patch (retourne l'état final et les changements).
-    4. Notifie l'overlay si la couleur a changé.
-
-    Args:
-        request (Request): Objet FastAPI contenant le contexte de la requête.
-        body (DuckPatch): Modèle Pydantic contenant les champs à patcher.
-        channel (str): Canal de diffusion de l'overlay.
-
-    Returns:
-        dict: Confirmation et état final du canard (serialisé via DuckOut).
+    Raises:
+        HTTPException: If the user is not found (404).
     """
     uid = request.state.uid
     user = await uow.users.get(uid)
     if not user:
-        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+        raise HTTPException(status_code=404, detail="User not found")
+    color = user.duck_color
+    return {"user_id": uid, "duck": DuckOut(duck_color=color).model_dump()}
 
-    # 1) récupérer uniquement les champs envoyés et autorisés
+
+@router.patch("/duck")
+async def patch_duck(request: Request, body: DuckPatch, channel: str = "default", uow: UnitOfWork = Depends(get_uow)):
+    """
+    Partially updates the duck for the authenticated user.
+    Editable fields are defined in EDITABLE_FIELDS (imported from app.services.ducks).
+    Validates fields, applies the patch via apply_duck_patch, and notifies the overlay if necessary.
+
+    Steps:
+    1. Extracts only the fields sent and allowed via extract_patch (EDITABLE_FIELDS).
+    2. Validates the color if present in the patch (allowed palette).
+    3. Applies the patch to the duck with apply_duck_patch (returns final state and changes).
+    4. Notifies the overlay if the color has changed.
+
+    Args:
+        request (Request): FastAPI request object containing the request context.
+        body (DuckPatch): Pydantic model containing fields to patch.
+        channel (str): Overlay channel name.
+        uow (UnitOfWork): Unit of Work instance for database operations.
+
+    Returns:
+        dict: Confirmation and final duck state (serialized via DuckOut).
+
+    Raises:
+        HTTPException: If the user is not found (404) or if patch validation fails (400).
+    """
+    uid = request.state.uid
+    user = await uow.users.get(uid)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    # 1) Extract only the sent and allowed fields
     try:
         patch = extract_patch(body, allowed=EDITABLE_FIELDS)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     if not patch:
+        # No changes, return current duck color
         return {"ok": True, "duck": {"duck_color": user.duck_color}}
-    
-    updated = await apply_duck_patch(uow, uid, patch, channel=channel)
-    return {"ok": True, "duck": DuckOut(**updated[0]).model_dump()} # Le **updated décompose le dictionnaire en arguments nommés pour le modèle Pydantic
+    updated, _ = await apply_duck_patch(uow, uid, patch, channel=channel)
+    # Unpack the updated dict into DuckOut for serialization
+    return {"ok": True, "duck": DuckOut(**updated).model_dump()}
