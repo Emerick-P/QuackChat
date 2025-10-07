@@ -1,11 +1,9 @@
 from typing import Any, Dict, Mapping, Set, Callable, Tuple
 from fastapi import HTTPException
-from app.core.state import DUCKS, PALETTE
+from app.core.state import PALETTE
+from app.db.uow import UnitOfWork
 from app.schemas.duck import DuckOut
-from app.utils.patch import apply_patch
 from app.services.overlay import send_event, make_duck_update_event
-from app.repository.user import get_user, patch_user
-from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
 # Champs éditables côté client
@@ -19,7 +17,7 @@ def _validate_color(value: str) -> str:
         raise HTTPException(status_code=400, detail="Unknown color")
     return value
     
-VALIDATORS: Dict[str, Callable[[Any], None]] = {
+VALIDATORS: Dict[str, Callable[[Any], Any]] = {
     "duck_color": _validate_color,
 }
 
@@ -59,7 +57,7 @@ def _aggregate_validate(patch: Mapping[str, Any]) -> dict[str, Any]:
     return validated
 
 async def apply_duck_patch(
-        session: AsyncSession,
+        uow: UnitOfWork,
         uid: str,
         patch: Mapping[str, Any], *,
         channel: str = "default"
@@ -69,7 +67,7 @@ async def apply_duck_patch(
     Tout-ou-rien: on n'écrit en DB que si toutes les validations passent.
     Retourne (duck_dict, changed_fields).
     """
-    user = await get_user(session, uid)
+    user = await uow.users.get(uid)
     if user is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "User not found")
 
@@ -82,7 +80,7 @@ async def apply_duck_patch(
     # Phase 2: appliquer uniquement ce qui change réellement
     changed = {k: v for k, v in clean.items() if getattr(user, k) != v}
     if changed:
-        user = await patch_user(session, uid, changed)      
+        user = await uow.users.patch(uid, changed)
         if "duck_color" in changed:
             await send_event(channel, make_duck_update_event(uid, changed["duck_color"]))
 

@@ -1,7 +1,5 @@
 from typing import Any, Dict
 
-USERS: Dict[str, Dict[str, Any]] = {}
-DUCKS: Dict[str, Dict[str, Any]] = {}
 TOKENS: Dict[str, str] = {}
 
 PALETTE = {

@@ -1,16 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
-from app.core.state import DUCKS
 from app.core.auth import auth_context
-from app.db.session import get_session
+from app.db.uow import UnitOfWork, get_uow
 from app.schemas.duck import DuckOut, DuckPatch
 from app.services.ducks import EDITABLE_FIELDS, apply_duck_patch
 from app.utils.patch import extract_patch
-from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/me", tags=["me"], dependencies=[Depends(auth_context)]) # Protege tout le router
 
 @router.get("/duck")
-async def me_duck(request: Request):
+async def me_duck(request: Request, uow: UnitOfWork = Depends(get_uow)):
     """
     Retourne les informations du canard associé à l'utilisateur authentifié.
 
@@ -21,10 +19,12 @@ async def me_duck(request: Request):
         dict: Informations sur l'utilisateur et son canard.
     """
     uid = request.state.uid
-    return {"user_id": uid, "duck": DUCKS.get(uid, {"color": "#8A2BE2"})}
+    user = await uow.users.get(uid)
+    color = user.duck_color if user else "#8A2BE2"
+    return {"user_id": uid, "duck": DuckOut(duck_color=color).model_dump()}
 
 @router.patch("/duck")
-async def patch_duck(request: Request, body: DuckPatch, channel: str = "default", session: AsyncSession = Depends(get_session)):
+async def patch_duck(request: Request, body: DuckPatch, channel: str = "default", uow: UnitOfWork = Depends(get_uow)):
     """
     Met à jour partiellement le canard de l'utilisateur authentifié.
     Les champs modifiables sont définis dans EDITABLE_FIELDS (importé depuis app.services.ducks).
@@ -45,7 +45,9 @@ async def patch_duck(request: Request, body: DuckPatch, channel: str = "default"
         dict: Confirmation et état final du canard (serialisé via DuckOut).
     """
     uid = request.state.uid
-    current = DUCKS.get(uid, {"duck_color": "#8A2BE2"})
+    user = await uow.users.get(uid)
+    if not user:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
 
     # 1) récupérer uniquement les champs envoyés et autorisés
     try:
@@ -53,7 +55,7 @@ async def patch_duck(request: Request, body: DuckPatch, channel: str = "default"
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     if not patch:
-        return {"ok": True, "duck": current}
+        return {"ok": True, "duck": {"duck_color": user.duck_color}}
     
-    updated = await apply_duck_patch(session, uid, patch, channel=channel)
+    updated = await apply_duck_patch(uow, uid, patch, channel=channel)
     return {"ok": True, "duck": DuckOut(**updated[0]).model_dump()} # Le **updated décompose le dictionnaire en arguments nommés pour le modèle Pydantic
