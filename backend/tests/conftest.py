@@ -1,28 +1,15 @@
 import os
-import asyncio
 import tempfile
 from typing import AsyncGenerator
 
 import pytest
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 
 from app.main import app
 from app.core.settings import settings
 from app.db.uow import UnitOfWork
 from app.db.base import Base as models_base  # suppose que Base est exporté ici
-
-@pytest.fixture(scope="session")
-def event_loop():
-    """
-    Creates a new asyncio event loop for the test session.
-
-    Yields:
-        asyncio.AbstractEventLoop: The event loop for async tests.
-    """
-    loop = asyncio.new_event_loop()
-    yield loop
-    loop.close()
 
 @pytest.fixture(scope="session")
 def sqlite_url() -> tuple[str, tempfile.TemporaryDirectory]:
@@ -87,7 +74,10 @@ async def db_session(session_maker) -> AsyncGenerator[AsyncSession, None]:
         try:
             yield session
         finally:
-            await trans.rollback()  # Clean up all writes
+            try:
+                await trans.rollback()
+            except Exception:
+                pass  # Ignore ResourceClosedError
 
 @pytest.fixture(autouse=True)
 def _test_settings(sqlite_url, monkeypatch):
@@ -130,13 +120,7 @@ def override_uow(db_session):
 
 @pytest.fixture
 async def client():
-    """
-    Provides an async HTTP client for FastAPI endpoints.
-
-    Yields:
-        AsyncClient: The HTTPX async client.
-    """
-    async with AsyncClient(app=app, base_url="http://test") as ac:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         yield ac
 
 @pytest.fixture
