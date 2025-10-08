@@ -28,5 +28,8 @@ class Settings:
         self.CORS_ORIGINS: List[str] = _parse_csv(os.getenv("CORS_ORIGINS")) or ["http://localhost:5173"]
         self.DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./var/dev.db")
         self.PAIRING_CODE_EXPIRY_SECONDS: int = int(os.getenv("PAIRING_CODE_EXPIRY_SECONDS", "300"))
+        self.JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "dev-secret")
+        self.JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
+        self.JWT_EXPIRE_MINUTES: int = int(os.getenv("JWT_EXPIRE_MINUTES", "60"))
 
 settings = Settings()

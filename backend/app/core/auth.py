@@ -1,51 +1,31 @@
 from typing import Annotated, Optional
 from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
-from app.core.state import TOKENS
+from app.db.uow import UnitOfWork, get_uow
+from app.models.user import User
+from app.core.jwt import decode_access_token
 
 # Reads Authorization: Bearer <token>
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/dev/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
-def get_current_uid(token: Annotated[str, Depends(oauth2_scheme)]) -> str:
-    """
-    Retrieves the user identifier (uid) from the authentication token.
-    Checks token validity and raises HTTP 401 if the token is missing or invalid.
+async def get_current_user(
+        token: Annotated[str, Depends(oauth2_scheme)],
+        uow: UnitOfWork = Depends(get_uow)
+        ) -> User: 
+    if not token:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing token")
+    payload = decode_access_token(token)
+    user_id = payload.get("sub")
+    if not user_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+    user = await uow.users.get(user_id)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+    return user
 
-    Args:
-        token (str): Authentication token extracted from the Authorization header.
+CurrentUser = Annotated[User, Depends(get_current_user)]
 
-    Returns:
-        str: User identifier associated with the token.
-
-    Raises:
-        HTTPException: If the token is missing or invalid.
-    """
-    uid = TOKENS.get(token)
-    if not uid:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or missing token",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    return uid
-
-# variante "optionnelle" pour des endpoints publics qui connaissent l’user si présent
-def get_optional_uid(token: Optional[str] = Depends(oauth2_scheme)) -> Optional[str]:
-    """
-    Optional variant for public endpoints.
-    Returns the uid if the token is present and valid, otherwise None.
-
-    Args:
-        token (Optional[str]): Authentication token (may be absent).
-
-    Returns:
-        Optional[str]: User identifier or None if not authenticated.
-    """
-    return TOKENS.get(token) if token else None
-
-CurrentUID = Annotated[str, Depends(get_current_uid)]
-
-async def auth_context(request: Request, uid: CurrentUID):
+async def auth_context(request: Request, user: CurrentUser):
     """
     Adds the user identifier (uid) to the request context (request.state).
     Makes the uid available throughout the router's routes.
@@ -54,4 +34,4 @@ async def auth_context(request: Request, uid: CurrentUID):
         request (Request): FastAPI request object containing the context.
         uid (str): Authenticated user identifier.
     """
-    request.state.uid = uid  # Available everywhere in this router
+    request.state.user = user  # Available everywhere in this router

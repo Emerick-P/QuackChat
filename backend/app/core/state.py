@@ -1,7 +1,3 @@
-from typing import Any, Dict
-
-TOKENS: Dict[str, str] = {}
-
 PALETTE = {
     "public": [
         {"id": "violet",  "name": "Violet",   "hex": "#8A2BE2"},

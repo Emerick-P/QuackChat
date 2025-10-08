@@ -8,7 +8,7 @@ from app.utils.patch import extract_patch
 router = APIRouter(prefix="/me", tags=["me"], dependencies=[Depends(auth_context)]) # Protege tout le router
 
 @router.get("/duck")
-async def me_duck(request: Request, uow: UnitOfWork = Depends(get_uow)):
+async def me_duck(request: Request):
     """
     Returns information about the duck associated with the authenticated user.
 
@@ -22,12 +22,11 @@ async def me_duck(request: Request, uow: UnitOfWork = Depends(get_uow)):
     Raises:
         HTTPException: If the user is not found (404).
     """
-    uid = request.state.uid
-    user = await uow.users.get(uid)
+    user = request.state.user
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     color = user.duck_color
-    return {"user_id": uid, "duck": DuckOut(duck_color=color).model_dump()}
+    return {"user_id": user.id, "duck": DuckOut(duck_color=color).model_dump()}
 
 
 @router.patch("/duck")
@@ -55,8 +54,7 @@ async def patch_duck(request: Request, body: DuckPatch, channel: str = "default"
     Raises:
         HTTPException: If the user is not found (404) or if patch validation fails (400).
     """
-    uid = request.state.uid
-    user = await uow.users.get(uid)
+    user = request.state.user
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     # 1) Extract only the sent and allowed fields
@@ -67,6 +65,6 @@ async def patch_duck(request: Request, body: DuckPatch, channel: str = "default"
     if not patch:
         # No changes, return current duck color
         return {"ok": True, "duck": {"duck_color": user.duck_color}}
-    updated, _ = await apply_duck_patch(uow, uid, patch, channel=channel)
+    updated, _ = await apply_duck_patch(uow, user.id, patch, channel=channel)
     # Unpack the updated dict into DuckOut for serialization
     return {"ok": True, "duck": DuckOut(**updated).model_dump()}
