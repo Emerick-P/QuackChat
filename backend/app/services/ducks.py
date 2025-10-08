@@ -117,4 +117,5 @@ async def apply_duck_patch(
         if "duck_color" in changed:
             await send_event(channel, make_duck_update_event(uid, changed["duck_color"]))
 
+    await uow.commit()
     return DuckOut(duck_color=user.duck_color).model_dump(), changed

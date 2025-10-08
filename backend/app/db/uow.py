@@ -3,6 +3,7 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_session
 from app.repository.user import UsersRepository
+from app.repository.pairing import PairingRepository
 
 class UnitOfWork:
     """
@@ -15,6 +16,7 @@ class UnitOfWork:
     def __init__(self, session: AsyncSession):
         self.session = session
         self.users = UsersRepository(session)
+        self.pairing = PairingRepository(session)
 
     async def commit(self):
         """Commits the current transaction."""

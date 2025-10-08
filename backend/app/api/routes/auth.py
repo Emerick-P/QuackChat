@@ -22,6 +22,7 @@ async def dev_login(display: str, user_id: Optional[str] = None, uow: UnitOfWork
     """
     uid = user_id or f"twitch:{secrets.token_hex(4)}"
     user = await uow.users.ensure_for_login(uid, display)
+    await uow.commit()  
 
     tok = secrets.token_urlsafe(24)
     TOKENS[tok] = uid
