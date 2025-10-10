@@ -1,9 +1,28 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes import overlay, auth, me, public, pairing
+from app.core.redis_broker import RedisBroker
 from app.core.settings import settings
 
-app = FastAPI(title="QuackChat - Backend (Step 1)")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    print("Application starting up...")
+    try:
+        await broker.connect()
+        app.state.redis_broker = broker
+    except Exception as e:
+        print(f"Error connecting to Redis broker: {e}")
+
+    yield
+
+    # Shutdown
+    print("Application shutting down...")
+    await broker.close()
+
+broker = RedisBroker(settings.REDIS_URL)
+app = FastAPI(title="QuackChat - Backend (Step 1)", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -26,4 +45,4 @@ app.include_router(pairing.router)
 if settings.ENV != "prod":
     from app.api.routes import dev
     app.include_router(dev.router) 
-    app.include_router(auth.router) 
+    app.include_router(auth.router)

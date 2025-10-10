@@ -1,10 +1,10 @@
+import asyncio
 from collections.abc import Mapping
 from typing import Union, Dict, Any, Set, DefaultDict
 import json
 from collections import defaultdict
 from fastapi import WebSocket
 from pydantic import BaseModel
-
 from app.schemas.duck import DuckOut
 from app.schemas.events import ChatEvent, DuckUpdateEvent, WSEvent
 
@@ -76,15 +76,26 @@ def _as_payload(event: EventLike) -> Dict:
         return dict(event)
     raise TypeError(f"Unsupported event type: {type(event)!r}")
 
+def _get_broker():
+    from app.main import app
+    return getattr(app.state, "redis_broker", None)
+
 async def send_event(channel: str, event: EventLike):
     """
     Broadcasts an arbitrary event on the overlay channel.
+    
+    Uses Redis broker if available, otherwise broadcasts directly to WebSocket rooms.
 
     Args:
         channel (str): Overlay channel name.
         event (EventLike): Event to broadcast (formatted for the overlay).
     """
-    await rooms.broadcast(channel, _as_payload(event))
+    payload = _as_payload(event)
+    broker = _get_broker()
+    if broker:
+        await broker.publish(overlay_channel_name(channel), payload)
+    else:
+        await rooms.broadcast(channel, payload)
 
 def make_chat_event(display: str, 
                     message: str, 
@@ -127,3 +138,40 @@ def make_duck_update_event(user_id: str | int, duck_color: str) -> DuckUpdateEve
         duck=DuckOut(duck_color=duck_color)
     )
 
+def overlay_channel_name(room: str) -> str:
+    """
+    Generates the full overlay channel name.
+
+    Args:
+        room (str): Room identifier (e.g., "user:<uid>" or "channel:<twitch_login>").
+
+    Returns:
+        str: Full channel name with prefix.
+    """
+    from app.core.settings import settings
+    return f"{settings.REDIS_OVERLAY_PREFIX}:{room}"
+
+_room_listeners: Dict[str, asyncio.Task] = {}
+
+async def ensure_room_listener(channel: str):
+    """Ensures a Redis listener task is running for the specified channel."""
+    broker = _get_broker()
+    if broker is None:
+        return  # no broker configured
+    
+    if channel in _room_listeners and not _room_listeners[channel].done():
+        return  # already running
+    
+    async def _listen():
+        try: 
+            redis_channel = overlay_channel_name(channel)
+            async for message in broker.subscribe(redis_channel):
+                await rooms.broadcast(channel, message)
+        except asyncio.CancelledError:
+            pass
+        except Exception:
+            pass
+        finally:
+            _room_listeners.pop(channel, None)
+
+    _room_listeners[channel] = asyncio.create_task(_listen())

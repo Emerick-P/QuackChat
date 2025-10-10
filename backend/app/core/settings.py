@@ -31,5 +31,7 @@ class Settings:
         self.JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "dev-secret")
         self.JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
         self.JWT_EXPIRE_MINUTES: int = int(os.getenv("JWT_EXPIRE_MINUTES", "60"))
+        self.REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+        self.REDIS_OVERLAY_PREFIX = os.getenv("REDIS_OVERLAY_PREFIX", "overlay")
 
 settings = Settings()
