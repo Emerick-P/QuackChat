@@ -14,9 +14,6 @@ class Rooms:
     Manages WebSocket rooms for overlay channels.
     """
     def __init__(self):
-        """
-        Initializes the room manager for WebSockets.
-        """
         self.rooms: DefaultDict[str, Set[WebSocket]] = defaultdict(set)
 
     async def add(self, ws: WebSocket, channel: str):

@@ -7,19 +7,8 @@ DEFAULT_COLOR = "#8A2BE2"
 ALLOWED_PATCH = {"display", "duck_color"}
 
 class UsersRepository:
-    """
-    Repository for user-related database operations.
-
-    Args:
-        session (AsyncSession): The database session to use.
-    """
+    """Repository for user-related database operations."""
     def __init__(self, session: AsyncSession):
-        """
-        Initializes the UsersRepository with a database session.
-
-        Args:
-            session (AsyncSession): The database session to use.
-        """
         self.session = session
 
     async def get(self, user_id: str) -> Optional[User]:

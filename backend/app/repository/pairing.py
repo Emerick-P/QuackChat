@@ -9,30 +9,15 @@ from app.repository.user import UsersRepository
 DEFAULT_TTL_S = 300  # Default time-to-live for pairing codes in seconds
 
 def _now() -> datetime:
-    """
-    Returns the current UTC datetime.
-
-    Returns:
-        datetime: Current UTC time.
-    """
+    """Returns the current UTC datetime."""
     return datetime.now(timezone.utc)
 
 def generate_code() -> str:
-    """
-    Generates a random, readable pairing code.
-
-    Returns:
-        str: A 6-character uppercase hexadecimal code.
-    """
+    """Generates a random, readable pairing code."""
     return secrets.token_hex(3).upper()
 
 class PairingRepository:
-    """
-    Repository for pairing code-related database operations.
-
-    Args:
-        session (AsyncSession): The database session to use.
-    """
+    """Repository for pairing code-related database operations."""
     def __init__(self, session: AsyncSession):
         self.session = session
 

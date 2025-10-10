@@ -5,12 +5,25 @@ from app.core.settings import settings
 from app.db.base import Base
 
 def default_expiry() -> datetime:
+    """Return the default expiry datetime for a pairing code."""
     return utcnow() + timedelta(seconds=settings.PAIRING_CODE_EXPIRY_SECONDS)
 
 def utcnow() -> datetime:
+    """Return the current UTC datetime."""
     return datetime.now(timezone.utc)
 
 class PairingCode(Base):
+    """
+    SQLAlchemy model representing a pairing code used to associate a duck color and channel with a guest.
+
+    Attributes:
+        code (str): Unique code displayed to guests (primary key).
+        duck_color (str): Color chosen by the guest.
+        channel (str): Overlay channel to notify.
+        created_at (datetime): Timestamp when the pairing code was created.
+        expires_at (datetime): Expiration timestamp for the pairing code.
+        claimed_by (Optional[str]): ID of the user who claimed the code (foreign key to users).
+    """
     __tablename__ = "pairing_codes"
 
     # code displayed to guests (e.g., "A1B2C3")

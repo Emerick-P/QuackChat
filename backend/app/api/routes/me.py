@@ -14,7 +14,6 @@ async def me_duck(request: Request):
 
     Args:
         request (Request): FastAPI request object containing the request context.
-        uow (UnitOfWork): Unit of Work instance for database operations.
 
     Returns:
         dict: Information about the user and their duck.

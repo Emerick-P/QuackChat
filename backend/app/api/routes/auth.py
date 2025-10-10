@@ -10,6 +10,15 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.get("/me")
 async def read_me(user: CurrentUser):
+    """
+    Returns information about the currently authenticated user.
+
+    Args:
+        user (CurrentUser): The authenticated user injected by the dependency.
+
+    Returns:
+        dict: Contains the user's ID, display name, and duck color.
+    """
     return {
         "user_id": user.id,
         "display": user.display,

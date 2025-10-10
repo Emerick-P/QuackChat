@@ -12,6 +12,19 @@ async def get_current_user(
         token: Annotated[str, Depends(oauth2_scheme)],
         uow: UnitOfWork = Depends(get_uow)
         ) -> User: 
+    """
+    Retrieves the current authenticated user from the JWT token.
+
+    Args:
+        token (str): JWT access token extracted from the Authorization header.
+        uow (UnitOfWork): Unit of Work instance for database operations.
+
+    Returns:
+        User: The authenticated user object.
+
+    Raises:
+        HTTPException: If the token is missing, invalid, or the user is not found.
+    """
     if not token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing token")
     payload = decode_access_token(token)
